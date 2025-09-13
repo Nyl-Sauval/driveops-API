@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CheckTokenExpiration;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth:sanctum' => EnsureFrontendRequestsAreStateful::class,
             'admin' => AdminMiddleware::class,
         ]);
+        $middleware->append(CheckTokenExpiration::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

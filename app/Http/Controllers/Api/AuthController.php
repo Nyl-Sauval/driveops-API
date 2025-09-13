@@ -31,10 +31,15 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', ['*'])->plainTextToken;
+
+        $accessToken = $user->tokens()->latest()->first();
+        $accessToken->expires_at = now()->addHour();
+        $accessToken->save();
 
         return response()->json([
             'user' => $user,
+            'expires_in' => 3600,
             'token' => $token,
         ], 201);
     }
@@ -55,10 +60,15 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', ['*'])->plainTextToken;
+
+        $accessToken = $user->tokens()->latest()->first();
+        $accessToken->expires_at = now()->addHour();
+        $accessToken->save();
 
         return response()->json([
             'user' => $user,
+            'expires_in' => 3600,
             'token' => $token,
         ]);
     }
@@ -103,12 +113,35 @@ class AuthController extends Controller
             ]
         );
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', ['*'])->plainTextToken;
+
+        $accessToken = $user->tokens()->latest()->first();
+        $accessToken->expires_at = now()->addHour();
+        $accessToken->save();
 
         return response()->json([
             'user' => $user,
+            'expires_in' => 3600,
             'token' => $token,
         ]);
 
+    }
+
+    // Refresh token
+    public function refresh(Request $request)
+    {
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+
+        $plainTextToken = $user->createToken('api-token')->plainTextToken;
+
+        $accessToken = $user->tokens()->latest()->first();
+        $accessToken->expires_at = now()->addHour();
+        $accessToken->save();
+
+        return response()->json([
+            'token' => $plainTextToken,
+            'expires_in' => 3600,
+        ]);
     }
 }
