@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\InvoiceController;
 
 // AUTH
 // LOGIN
-Route::post('login', [AuthController::class, 'login'])->name('login');
+Route::post('login', [AuthController::class, 'login'])->name('login')->middleware('throttle:10,1');
 // LOGOUT
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 // REGISTER
@@ -34,12 +34,6 @@ Route::get('users/{user}/invoices', [InvoiceController::class, 'invoicesByUser']
 // VEHICULE
 // INDEX
 Route::apiResource('vehicules', VehiculeController::class)->middleware('auth:sanctum');
-// SHOW
-Route::get('vehicules/{vehicule}', [VehiculeController::class, 'show'])->name('vehicules.show')->middleware('auth:sanctum');
-// UPDATE
-Route::put('vehicules/{vehicule}', [VehiculeController::class, 'update'])->name('vehicules.update')->middleware('auth:sanctum');
-// DELETE
-Route::delete('vehicules/{vehicule}', [VehiculeController::class, 'destroy'])->name('vehicules.destroy')->middleware('auth:sanctum');
 // RELATIONS
 Route::get('vehicules/{vehicule}/maintenances', [MaintenanceController::class, 'maintenancesByVehicule'])->name('vehicules.maintenances')->middleware('auth:sanctum');
 Route::get('vehicules/{vehicule}/invoices', [InvoiceController::class, 'invoicesByVehicule'])->name('vehicules.invoices')->middleware('auth:sanctum');
