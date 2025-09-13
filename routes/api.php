@@ -19,13 +19,7 @@ Route::get('me', [AuthController::class, 'me'])->name('me')->middleware('auth:sa
 
 // USER
 //INDEX
-Route::apiResource('users', UserController::class)->middleware(['auth:sanctum', 'admin']);
-// SHOW
-Route::get('users/{user}', [UserController::class, 'show'])->name('users.show')->middleware('auth:sanctum');
-// UPDATE
-Route::put('users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('auth:sanctum');
-// DELETE
-Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware(['auth:sanctum', 'admin']);
+Route::apiResource('users', UserController::class)->middleware('auth:sanctum');
 // RELATIONS
 Route::get('users/{user}/vehicules', [UserController::class, 'getUserVehicules'])->name('users.vehicules')->middleware('auth:sanctum');
 Route::get('users/{user}/maintenances', [MaintenanceController::class, 'maintenancesByUser'])->name('users.maintenances')->middleware('auth:sanctum');

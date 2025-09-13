@@ -16,6 +16,8 @@ class UserController extends Controller
     // GET /api/users
     public function index()
     {
+        $this->authorize('viewAny', User::class);
+
         return response([
             'message' => 'List of users',
             'data' => [
@@ -54,6 +56,9 @@ class UserController extends Controller
     public function show(string $id)
     {
         $user = User::findOrFail($id);
+
+        $this->authorize('view', $user);
+
         return response()->json($user, 200);
     }
 
@@ -64,6 +69,8 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         $user = User::findOrFail($id);
+
+        $this->authorize('update', $user);
 
         $validated = $request->validate([
             'firstname' => 'sometimes|string|max:255',
@@ -90,6 +97,9 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         $user = User::findOrFail($id);
+
+        $this->authorize('delete', $user);
+
         $user->delete();
 
         return response()->json([
