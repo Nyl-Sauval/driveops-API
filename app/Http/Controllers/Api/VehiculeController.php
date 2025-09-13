@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Vehicule;
 use Illuminate\Http\Request;
 
@@ -14,7 +15,10 @@ class VehiculeController extends Controller
     // // GET /api/vehicules
     public function index()
     {
-        return response()->json(Vehicule::with(['user', 'maintenances', 'invoices'])->get());
+        $this->authorize('viewAny', Vehicule::class);
+        return response()->json(
+            Vehicule::with(['user', 'maintenances', 'invoices'])->get()
+        );
     }
 
     /**
@@ -44,6 +48,9 @@ class VehiculeController extends Controller
     public function show(string $id)
     {
         $vehicule = Vehicule::with(['user', 'maintenances', 'invoices'])->findOrFail($id);
+
+        $this->authorize('view', $vehicule);
+
         return response()->json($vehicule);
     }
 
@@ -54,6 +61,8 @@ class VehiculeController extends Controller
     public function update(Request $request, string $id)
     {
         $vehicule = Vehicule::findOrFail($id);
+
+        $this->authorize('update', $vehicule);
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -76,18 +85,11 @@ class VehiculeController extends Controller
     public function destroy(string $id)
     {
         $vehicule = Vehicule::findOrFail($id);
+
+        $this->authorize('delete', $vehicule);
+
         $vehicule->delete();
 
         return response()->json(null, 204);
-    }
-
-    /**
-     * Get the list of vehicles for a specific user.
-     */
-    // // GET /api/users/{userId}/vehicules
-    public function getUserVehicules(int $userId)
-    {
-        $vehicules = Vehicule::where('user_id', $userId)->with(['user', 'maintenances', 'invoices'])->get();
-        return response()->json($vehicules);
     }
 }

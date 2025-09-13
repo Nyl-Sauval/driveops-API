@@ -27,7 +27,7 @@ Route::put('users/{user}', [UserController::class, 'update'])->name('users.updat
 // DELETE
 Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware(['auth:sanctum', 'admin']);
 // RELATIONS
-Route::get('users/{user}/vehicules', [VehiculeController::class, 'vehiculesByUser'])->name('users.vehicules')->middleware('auth:sanctum');
+Route::get('users/{user}/vehicules', [UserController::class, 'getUserVehicules'])->name('users.vehicules')->middleware('auth:sanctum');
 Route::get('users/{user}/maintenances', [MaintenanceController::class, 'maintenancesByUser'])->name('users.maintenances')->middleware('auth:sanctum');
 Route::get('users/{user}/invoices', [InvoiceController::class, 'invoicesByUser'])->name('users.invoices')->middleware('auth:sanctum');
 

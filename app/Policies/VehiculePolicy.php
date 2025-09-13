@@ -61,13 +61,4 @@ class VehiculePolicy
         // Allow only admin users to permanently delete the vehicle
         return $user->role === User::ROLE_ADMIN;
     }
-
-    /**
-     * Determine whether the user can view the vehicles of a specific user.
-     */
-    public function viewUserVehicles(User $user, User $targetUser): bool
-    {
-        // Allow only admin or the user themselves to view their own vehicles
-        return $user->role === User::ROLE_ADMIN || $user->id === $targetUser->id;
-    }
 }

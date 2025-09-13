@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Vehicule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -93,5 +95,21 @@ class UserController extends Controller
         return response()->json([
             'message' => 'User deleted successfully',
         ], 204);
+    }
+
+
+    /**
+     * Get the list of vehicles for a specific user.
+     */
+    // // GET /api/users/{user}/vehicules
+    public function getUserVehicules(User $user)
+    {
+        $this->authorize('viewVehicles', $user);
+
+        $vehicules = Vehicule::where('user_id', $user->id)
+            ->with(['user', 'maintenances', 'invoices'])
+            ->get();
+
+        return response()->json($vehicules);
     }
 }
