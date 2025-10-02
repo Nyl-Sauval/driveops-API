@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckTokenExpiration
@@ -15,11 +16,21 @@ class CheckTokenExpiration
      */
     public function handle(Request $request, Closure $next)
     {
-        $token = $request->user()?->currentAccessToken();
+        // ⚡ Ne pas vérifier ces routes
+        if ($request->is('api/login') || $request->is('api/register')) {
+            return $next($request);
+        }
 
-        if ($token && $token->expires_at && $token->expires_at->isPast()) {
-            $token->delete(); // on révoque le token expiré
-            return response()->json(['message' => 'Token expired'], 401);
+        $token = $request->bearerToken();
+
+        if (!$token) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $accessToken = PersonalAccessToken::findToken($token);
+
+        if (!$accessToken || ($accessToken->expires_at && now()->greaterThan($accessToken->expires_at))) {
+            return response()->json(['message' => 'Token expired or invalid'], 401);
         }
 
         return $next($request);

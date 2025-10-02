@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Google\Client as GoogleClient;
@@ -17,15 +18,15 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'firstname' => 'required|string|max:255',
-            'lastname' => 'required|string|max:255',
+            'firstName' => 'required|string|max:255',
+            'lastName' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::create([
-            'firstname' => $validated['firstname'],
-            'lastname' => $validated['lastname'],
+            'firstname' => $validated['firstName'],
+            'lastname' => $validated['lastName'],
             'email' => $validated['email'],
             'role' => User::ROLE_USER, // Default role
             'password' => Hash::make($validated['password']),
@@ -84,6 +85,7 @@ class AuthController extends Controller
     // Get authenticated user info
     public function me(Request $request)
     {
+        Log::info('Cookies:', $request->cookies->all());
         return response()->json($request->user());
     }
 

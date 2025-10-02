@@ -32,7 +32,8 @@ class User extends Authenticatable
         'email',
         'role',
         'password',
-        'google_id',
+        'provider_name',
+        'provider_id',
         'avatar',
     ];
 
@@ -44,7 +45,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'google_id',
+        'provider_name',
+        'provider_id',
     ];
 
     /**

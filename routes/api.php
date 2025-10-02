@@ -13,9 +13,13 @@ Route::post('login', [AuthController::class, 'login'])->name('login')->middlewar
 // LOGOUT
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 // REGISTER
-Route::post('register', [AuthController::class, 'register'])->name('register')->middleware('auth:sanctum');
+Route::post('register', [AuthController::class, 'register'])->name('register')->middleware('throttle:10,1');
+// GOOGLE LOGIN
+Route::post('google-login', [AuthController::class, 'googleLogin'])->name('google-login')->middleware('throttle:10,1');
+// REFRESH TOKEN
+Route::post('refresh-token', [AuthController::class, 'refresh'])->name('refresh-token')->middleware('auth:sanctum');
 // ME
-Route::get('me', [AuthController::class, 'me'])->name('me')->middleware('auth:sanctum');
+Route::get('me', [AuthController::class, 'me'])->name('me')->middleware(['auth:sanctum', 'check.token.expiration']);
 
 // USER
 //INDEX
