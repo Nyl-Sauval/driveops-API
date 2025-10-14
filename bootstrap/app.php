@@ -40,10 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => Authenticate::class,
             'admin' => AdminMiddleware::class,
+            'check.token.expiration' => CheckTokenExpiration::class,
         ]);
-
-        // Middleware custom
-        $middleware->append(CheckTokenExpiration::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

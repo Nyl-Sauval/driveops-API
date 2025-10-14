@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -16,12 +17,14 @@ class CheckTokenExpiration
      */
     public function handle(Request $request, Closure $next)
     {
+        Log::info('CheckTokenExpiration middleware triggered for route: ' . $request->path());
         // ⚡ Ne pas vérifier ces routes
         if ($request->is('api/login') || $request->is('api/register')) {
             return $next($request);
         }
 
         $token = $request->bearerToken();
+        Log::info('Bearer token: ' . ($token ? 'Present' : 'Not present'));
 
         if (!$token) {
             return response()->json(['message' => 'Unauthorized'], 401);

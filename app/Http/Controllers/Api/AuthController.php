@@ -85,7 +85,6 @@ class AuthController extends Controller
     // Get authenticated user info
     public function me(Request $request)
     {
-        Log::info('Cookies:', $request->cookies->all());
         return response()->json($request->user());
     }
 
