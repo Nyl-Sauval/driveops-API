@@ -25,7 +25,7 @@ Route::get('me', [AuthController::class, 'me'])->name('me')->middleware(['auth:s
 //INDEX
 Route::apiResource('users', UserController::class)->middleware('auth:sanctum');
 // RELATIONS
-Route::get('users/{user}/vehicles', [UserController::class, 'getUserVehicules'])->name('users.vehicules')->middleware('auth:sanctum');
+Route::get('users/{user}/vehicles', [UserController::class, '  '])->name('users.vehicules')->middleware('auth:sanctum');
 Route::get('users/{user}/maintenances', [MaintenanceController::class, 'maintenancesByUser'])->name('users.maintenances')->middleware('auth:sanctum');
 Route::get('users/{user}/invoices', [InvoiceController::class, 'invoicesByUser'])->name('users.invoices')->middleware('auth:sanctum');
 
