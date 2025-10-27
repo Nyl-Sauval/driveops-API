@@ -143,16 +143,36 @@ class UserController extends Controller
     // // GET /api/users/{userId}/maintenance/future
     public function futureMaintenancesByUser(string $userId)
     {
-        $maintenances = Maintenance::whereHas('vehicles.user', function ($query) use ($userId) {
-            $query->where('id', $userId);
-        })->where(function ($query) {
-            $query->where('scheduled_date', '>', now())
-                  ->orWhere('scheduled_mileage', '>', function ($subQuery) {
-                      $subQuery->selectRaw('MAX(mileage)')
-                               ->from('vehicules')
-                               ->whereColumn('vehicules.id', 'maintenance_vehicule.vehicule_id');
-                  });
-        })->with(['vehicles', 'invoices'])->get();
+        // 1. Start the query on the Maintenance model
+        $query = Maintenance::query();
+
+        // 2. Condition: Maintenances must be linked to a vehicle belonging to the user
+        $query->whereHas('vehicles', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        });
+
+        // 3. Main Condition: FUTURE Maintenance (Date OR Mileage)
+        $query->where(function ($q) {
+            // Condition 3A: Future date
+            $q->where('scheduled_date', '>', now());
+
+            // Condition 3B: OR Future Mileage
+            // We check if there is at least one linked VEHICLE for which
+            // the maintenance's scheduled_mileage is greater than the current mileage.
+            $q->orWhereExists(function ($subQuery) {
+                $subQuery->selectRaw(1)
+                    ->from('vehicules as v')
+                    // Join the pivot table to link the current maintenance (maintenances.id) to the vehicle (v.id)
+                    ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
+                    ->whereColumn('mv.maintenance_id', 'maintenances.id') // <-- Correlation key
+                    // The condition is that the maintenance's scheduled mileage
+                    // is greater than the vehicle's current mileage.
+                    ->whereColumn('maintenances.scheduled_mileage', '>', 'v.mileage');
+            });
+        });
+
+        // 4. Execution and Eager Loading of Relationships
+        $maintenances = $query->with(['vehicles', 'invoices'])->get();
 
         return response()->json($maintenances);
     }
