@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
 use App\Models\Maintenance;
 use App\Models\User;
 use App\Models\Vehicule;
@@ -125,6 +126,26 @@ class UserController extends Controller
     }
 
     /**
+     * Get the count of vehicles for a specific user.
+     * GET /api/users/{user}/vehicles/count
+     */
+    // // GET /api/users/{user}/vehicles/count
+    public function getNumberOfVehiclesByUser(User $user)
+    {
+        // Sécurité: Assurez-vous que l'utilisateur est autorisé à voir ce compte.
+        $this->authorize('viewVehicles', $user);
+
+        // Utilisation de la méthode count() d'Eloquent, qui traduit en un simple "SELECT COUNT(*) FROM vehicules WHERE user_id = ?"
+        $count = Vehicule::where('user_id', $user->id)->count();
+
+        // Retournez un JSON propre.
+        return response()->json([
+            'count' => $count,
+            'user_id' => $user->id, // Optionnel, pour contexte
+        ]);
+    }
+
+    /**
      * Get the list of maintenance records for a specific user.
      */
     // // GET /api/users/{userId}/maintenance
@@ -175,5 +196,59 @@ class UserController extends Controller
         $maintenances = $query->with(['vehicles', 'invoices'])->get();
 
         return response()->json($maintenances);
+    }
+
+    /**
+     * Get the list of late maintenance records for a specific user.
+     */
+    // // GET /api/users/{userId}/maintenance/late
+    public function lateMaintenancesByUser(string $userId)
+    {
+        // 1. Start the query on the Maintenance model
+        $query = Maintenance::query();
+
+        // 2. Condition: Maintenances must be linked to a vehicle belonging to the user
+        $query->whereHas('vehicles', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        });
+
+        // 3. Main Condition: LATE Maintenance (Date OR Mileage)
+        $query->where(function ($q) {
+            // Condition 3A: Late date
+            $q->where('scheduled_date', '<', now());
+
+            // Condition 3B: OR Late Mileage
+            // We check if there is at least one linked VEHICLE for which
+            // the maintenance's scheduled_mileage is less than or equal to the current mileage.
+            $q->orWhereExists(function ($subQuery) {
+                $subQuery->selectRaw(1)
+                    ->from('vehicules as v')
+                    // Join the pivot table to link the current maintenance (maintenances.id) to the vehicle (v.id)
+                    ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
+                    ->whereColumn('mv.maintenance_id', 'maintenances.id') // <-- Correlation key
+                    // The condition is that the maintenance's scheduled mileage
+                    // is less than or equal to the vehicle's current mileage.
+                    ->whereColumn('maintenances.scheduled_mileage', '<=', 'v.mileage');
+            });
+        });
+
+        // 4. Execution and Eager Loading of Relationships
+        $maintenances = $query->with(['vehicles', 'invoices'])->get();
+
+        return response()->json($maintenances);
+    }
+
+
+    /**
+     * Get the invoices for a specific user
+     */
+    // // GET /api/users/{userId}/invoices
+    public function invoicesByUser($userId)
+    {
+        $invoices = Invoice::whereHas('vehicles.user', function ($query) use ($userId) {
+            $query->where('id', $userId);
+        })->with(['vehicles', 'maintenances'])->get();
+
+        return response()->json($invoices);
     }
 }

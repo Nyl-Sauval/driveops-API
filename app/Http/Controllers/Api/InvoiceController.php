@@ -104,19 +104,6 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Get the invoices for a specific user
-     */
-    // // GET /api/users/{userId}/invoices
-    public function invoicesByUser($userId)
-    {
-        $invoices = Invoice::whereHas('vehicles.user', function ($query) use ($userId) {
-            $query->where('id', $userId);
-        })->with(['vehicles', 'maintenances'])->get();
-
-        return response()->json($invoices);
-    }
-
-    /**
      * Get the invoices for a specific vehicle
      */
     // // GET /api/vehicules/{vehiculeId}/invoices
