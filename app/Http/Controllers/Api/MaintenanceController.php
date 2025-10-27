@@ -99,19 +99,6 @@ class MaintenanceController extends Controller
     }
 
     /**
-     * Get the list of maintenance records for a specific user.
-     */
-    // // GET /api/users/{userId}/maintenance
-    public function userMaintenance(string $userId)
-    {
-        $maintenances = Maintenance::whereHas('vehicles.user', function ($query) use ($userId) {
-            $query->where('id', $userId);
-        })->with(['vehicles', 'invoices'])->get();
-
-        return response()->json($maintenances);
-    }
-
-    /**
      * Get the list of maintenance records for a specific vehicle.
      */
     // // GET /api/vehicules/{vehiculeId}/maintenance

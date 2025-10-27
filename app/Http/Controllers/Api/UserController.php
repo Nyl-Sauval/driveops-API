@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Maintenance;
 use App\Models\User;
 use App\Models\Vehicule;
 use Illuminate\Http\Request;
@@ -111,15 +112,48 @@ class UserController extends Controller
     /**
      * Get the list of vehicles for a specific user.
      */
-    // // GET /api/users/{user}/vehicules
-    public function getUserVehicules(User $user)
+    // // GET /api/users/{user}/vehicles
+    public function getUserVehicles(User $user)
     {
         $this->authorize('viewVehicles', $user);
 
-        $vehicules = Vehicule::where('user_id', $user->id)
+        $vehicles = Vehicule::where('user_id', $user->id)
             ->with(['user', 'maintenances', 'invoices'])
             ->get();
 
-        return response()->json($vehicules);
+        return response()->json($vehicles);
+    }
+
+    /**
+     * Get the list of maintenance records for a specific user.
+     */
+    // // GET /api/users/{userId}/maintenance
+    public function maintenancesByUser(string $userId)
+    {
+        $maintenances = Maintenance::whereHas('vehicles.user', function ($query) use ($userId) {
+            $query->where('id', $userId);
+        })->with(['vehicles', 'invoices'])->get();
+
+        return response()->json($maintenances);
+    }
+
+    /**
+     * Get the list of future maintenance records for a specific user.
+     */
+    // // GET /api/users/{userId}/maintenance/future
+    public function futureMaintenancesByUser(string $userId)
+    {
+        $maintenances = Maintenance::whereHas('vehicles.user', function ($query) use ($userId) {
+            $query->where('id', $userId);
+        })->where(function ($query) {
+            $query->where('scheduled_date', '>', now())
+                  ->orWhere('scheduled_mileage', '>', function ($subQuery) {
+                      $subQuery->selectRaw('MAX(mileage)')
+                               ->from('vehicules')
+                               ->whereColumn('vehicules.id', 'maintenance_vehicule.vehicule_id');
+                  });
+        })->with(['vehicles', 'invoices'])->get();
+
+        return response()->json($maintenances);
     }
 }
