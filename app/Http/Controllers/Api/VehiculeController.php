@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Vehicule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class VehiculeController extends Controller
 {
@@ -27,6 +28,8 @@ class VehiculeController extends Controller
     // // POST /api/vehicules
     public function store(Request $request)
     {
+
+        Log::log('info', 'Creating a new vehicule', ['request' => $request->all()]);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'brand' => 'required|string|max:255',

@@ -181,16 +181,17 @@ class UserController extends Controller
             // We check if there is at least one linked VEHICLE for which
             // the maintenance's scheduled_mileage is greater than the current mileage.
             $q->orWhereExists(function ($subQuery) {
-                $subQuery->selectRaw(1)
-                    ->from('vehicules as v')
-                    // Join the pivot table to link the current maintenance (maintenances.id) to the vehicle (v.id)
-                    ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
-                    ->whereColumn('mv.maintenance_id', 'maintenances.id') // <-- Correlation key
-                    // The condition is that the maintenance's scheduled mileage
-                    // is greater than the vehicle's current mileage.
-                    ->whereColumn('maintenances.scheduled_mileage', '>', 'v.mileage');
+                    $subQuery->selectRaw(1)
+                        ->from('vehicules as v')
+                        // Join the pivot table to link the current maintenance (maintenances.id) to the vehicle (v.id)
+                        ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
+                        ->whereColumn('mv.maintenance_id', 'maintenances.id') // <-- Correlation key
+                        // The condition is that the maintenance's scheduled mileage
+                        // is greater than the vehicle's current mileage.
+                        ->whereColumn('maintenances.scheduled_mileage', '>', 'v.mileage');
+                }
+                );
             });
-        });
 
         // 4. Execution and Eager Loading of Relationships
         $maintenances = $query->with(['vehicles', 'invoices'])->get();
@@ -221,16 +222,17 @@ class UserController extends Controller
             // We check if there is at least one linked VEHICLE for which
             // the maintenance's scheduled_mileage is less than or equal to the current mileage.
             $q->orWhereExists(function ($subQuery) {
-                $subQuery->selectRaw(1)
-                    ->from('vehicules as v')
-                    // Join the pivot table to link the current maintenance (maintenances.id) to the vehicle (v.id)
-                    ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
-                    ->whereColumn('mv.maintenance_id', 'maintenances.id') // <-- Correlation key
-                    // The condition is that the maintenance's scheduled mileage
-                    // is less than or equal to the vehicle's current mileage.
-                    ->whereColumn('maintenances.scheduled_mileage', '<=', 'v.mileage');
+                    $subQuery->selectRaw(1)
+                        ->from('vehicules as v')
+                        // Join the pivot table to link the current maintenance (maintenances.id) to the vehicle (v.id)
+                        ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
+                        ->whereColumn('mv.maintenance_id', 'maintenances.id') // <-- Correlation key
+                        // The condition is that the maintenance's scheduled mileage
+                        // is less than or equal to the vehicle's current mileage.
+                        ->whereColumn('maintenances.scheduled_mileage', '<=', 'v.mileage');
+                }
+                );
             });
-        });
 
         // 4. Execution and Eager Loading of Relationships
         $maintenances = $query->with(['vehicles', 'invoices'])->get();
@@ -238,6 +240,86 @@ class UserController extends Controller
         return response()->json($maintenances);
     }
 
+
+    /**
+     * Get unified dashboard data for a specific user.
+     * Consolidates vehicles, maintenances, and invoices data in a single response.
+     * 
+     * @param User $user
+     * @return \Illuminate\Http\JsonResponse
+     */
+    // GET /api/users/{user}/dashboard
+    public function getDashboard(User $user)
+    {
+        // Authorization: User can only access their own dashboard (or admin can access any)
+        $this->authorize('viewVehicles', $user);
+
+        // 1. Get vehicles with count
+        $vehicles = Vehicule::where('user_id', $user->id)->get();
+        $vehicleCount = $vehicles->count();
+
+        // 2. Count upcoming maintenances (future date OR future mileage)
+        $upcomingQuery = Maintenance::query();
+        $upcomingQuery->whereHas('vehicles', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        });
+        $upcomingQuery->where(function ($q) {
+            // Future date
+            $q->where('scheduled_date', '>', now());
+
+            // OR Future Mileage
+            $q->orWhereExists(function ($subQuery) {
+                    $subQuery->selectRaw(1)
+                        ->from('vehicules as v')
+                        ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
+                        ->whereColumn('mv.maintenance_id', 'maintenances.id')
+                        ->whereColumn('maintenances.scheduled_mileage', '>', 'v.mileage');
+                }
+                );
+            });
+        $upcomingCount = $upcomingQuery->count();
+
+        // 3. Count late maintenances (past date OR past mileage)
+        $lateQuery = Maintenance::query();
+        $lateQuery->whereHas('vehicles', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        });
+        $lateQuery->where(function ($q) {
+            // Late date
+            $q->where('scheduled_date', '<', now());
+
+            // OR Late Mileage
+            $q->orWhereExists(function ($subQuery) {
+                    $subQuery->selectRaw(1)
+                        ->from('vehicules as v')
+                        ->join('maintenance_vehicule as mv', 'mv.vehicule_id', '=', 'v.id')
+                        ->whereColumn('mv.maintenance_id', 'maintenances.id')
+                        ->whereColumn('maintenances.scheduled_mileage', '<=', 'v.mileage');
+                }
+                );
+            });
+        $lateCount = $lateQuery->count();
+
+        // 4. Count invoices for this user
+        $invoiceCount = Invoice::whereHas('vehicles.user', function ($query) use ($user) {
+            $query->where('id', $user->id);
+        })->count();
+
+        // 5. Return unified response
+        return response()->json([
+            'vehicles' => [
+                'count' => $vehicleCount,
+                'list' => $vehicles
+            ],
+            'maintenances' => [
+                'upcoming' => $upcomingCount,
+                'late' => $lateCount
+            ],
+            'invoices' => [
+                'count' => $invoiceCount
+            ]
+        ], 200);
+    }
 
     /**
      * Get the invoices for a specific user

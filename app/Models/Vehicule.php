@@ -22,6 +22,7 @@ class Vehicule extends Model
         'mileage',
         'license_plate',
         'user_id',
+        'purchase_date',
     ];
 
     /**
